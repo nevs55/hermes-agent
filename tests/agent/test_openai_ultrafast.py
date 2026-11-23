@@ -147,7 +147,7 @@ def test_context_alias_pricing_preserves_custom_endpoint_rates(monkeypatch, prov
     })
     cost = estimate_usage_cost(
         "gpt-6-astra-900k", CanonicalUsage(input_tokens=1000, output_tokens=1000),
-        provider=provider, base_url=base_url,
+        provider=provider, base_url=base_url, api_key="",
     )
     assert (cost.amount_usd, cost.source) == (Decimal(amount), source)
 

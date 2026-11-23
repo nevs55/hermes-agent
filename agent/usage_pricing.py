@@ -655,9 +655,10 @@ def get_pricing_entry(
     bundled_entry = _lookup_official_docs_pricing(route)
     if bundled_entry:
         return bundled_entry
-    if route.base_url:
+    # Historical callers have no secrets; only an explicit empty key opts into a public catalog.
+    if route.base_url and api_key is not None:
         entry = _pricing_entry_from_metadata(
-            fetch_endpoint_model_metadata(route.base_url, api_key=api_key or ""), route.model,
+            fetch_endpoint_model_metadata(route.base_url, api_key=api_key), route.model,
             source_url=f"{route.base_url.rstrip('/')}/models",
             pricing_version="openai-compatible-models-api",
         )

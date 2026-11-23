@@ -269,6 +269,6 @@ def test_nous_rule_3_a_1h_write_is_priced_at_the_catalog_rate_not_a_fixed_2x(nou
     monkeypatch.setattr("agent.usage_pricing.fetch_endpoint_model_metadata",
                         lambda base_url, api_key="", **_: dict(_CATALOG))
     one_hour = CanonicalUsage(cache_write_tokens=1_000_000, cache_write_by_ttl=(("1h", 1_000_000),))
-    qwen = estimate_usage_cost("qwen/qwen3.7-max", one_hour, provider="nous", base_url=_NOUS).amount_usd
-    claude = estimate_usage_cost("anthropic/claude-sonnet-4.6", one_hour, provider="nous", base_url=_NOUS).amount_usd
+    qwen = estimate_usage_cost("qwen/qwen3.7-max", one_hour, provider="nous", base_url=_NOUS, api_key="").amount_usd
+    claude = estimate_usage_cost("anthropic/claude-sonnet-4.6", one_hour, provider="nous", base_url=_NOUS, api_key="").amount_usd
     assert (round(qwen, 4), round(claude, 4)) == (Decimal("1.8437"), Decimal("6.0000"))  # 1.25x vs Claude's 2x
