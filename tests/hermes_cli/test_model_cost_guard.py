@@ -148,7 +148,7 @@ def test_openai_gpt55_pro_warns_for_nous_portal_pricing(monkeypatch):
         },
     )
 
-    warning = expensive_model_warning("openai/gpt-5.5-pro", provider="nous")
+    warning = expensive_model_warning("openai/gpt-5.5-pro", provider="nous", api_key="test-credential")
 
     assert warning is not None
     assert warning.input_cost_per_million == Decimal("25.000000")

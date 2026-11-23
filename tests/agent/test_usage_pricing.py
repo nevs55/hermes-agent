@@ -51,7 +51,11 @@ def models_dev_registry(monkeypatch):
     from agent import models_dev
 
     monkeypatch.setattr(models_dev, "_models_dev_cache", _MODELS_DEV_REGISTRY)
-    monkeypatch.setattr("agent.usage_pricing.fetch_endpoint_model_metadata", lambda *_a, **_k: {})
+
+    def reject_probe(*_args, **_kwargs):
+        raise AssertionError("models.dev fallback must work without endpoint credentials")
+
+    monkeypatch.setattr("agent.usage_pricing.fetch_endpoint_model_metadata", reject_probe)
 
 
 @pytest.mark.parametrize(("provider", "base_url", "model", "expected"), [
@@ -160,6 +164,36 @@ def test_bundled_pricing_skips_endpoint_metadata(monkeypatch):
     assert entry.source == "official_docs_snapshot"
 
 
+def test_historical_unknown_model_does_not_probe_without_credentials(monkeypatch):
+    def reject_probe(*_args, **_kwargs):
+        raise AssertionError("historical pricing must not probe an authenticated endpoint")
+
+    monkeypatch.setattr("agent.usage_pricing.fetch_endpoint_model_metadata", reject_probe)
+    entry = get_pricing_entry(
+        "unknown-future-model", provider="custom", base_url="https://llmgw.example/v1",
+        api_key=None,
+    )
+    assert entry is None
+
+
+def test_explicit_public_catalog_and_credentialed_routes_use_endpoint_pricing(monkeypatch):
+    seen_keys = []
+
+    def endpoint_metadata(_base_url, api_key):
+        seen_keys.append(api_key)
+        return {"unknown-future-model": {"pricing": {"prompt": "0.000001"}}}
+
+    monkeypatch.setattr("agent.usage_pricing.fetch_endpoint_model_metadata", endpoint_metadata)
+    for key in ("", "test-credential"):
+        entry = get_pricing_entry(
+            "unknown-future-model", provider="custom", base_url="https://llmgw.example/v1",
+            api_key=key,
+        )
+        assert entry is not None
+        assert entry.input_cost_per_million == Decimal(1)
+    assert seen_keys == ["", "test-credential"]
+
+
 def test_unknown_model_falls_back_to_endpoint_metadata(monkeypatch):
     """Models absent from the bundled table still use endpoint pricing."""
     monkeypatch.setattr(
@@ -175,6 +209,7 @@ def test_unknown_model_falls_back_to_endpoint_metadata(monkeypatch):
         "deepseek-future",
         provider="deepseek",
         base_url="https://api.deepseek.com/v1",
+        api_key="",
     )
 
     assert entry is not None
